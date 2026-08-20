@@ -1,0 +1,166 @@
+import json
+from pathlib import Path
+
+import sync_agent
+
+
+def test_new_file_is_detected(tmp_path, monkeypatch):
+    """A file absent from the previous state is detected."""
+    watched = tmp_path / "watched"
+    watched.mkdir()
+
+    test_file = watched / "example.txt"
+    test_file.write_text("hello")
+
+    monkeypatch.chdir(tmp_path)
+
+    state = {}
+    changed = sync_agent.scan_directory(watched, state)
+
+    assert len(changed) == 1
+    assert changed[0][0] == "example.txt"
+    assert changed[0][1] == sync_agent.file_hash(test_file)
+
+
+def test_unchanged_file_is_not_detected(tmp_path, monkeypatch):
+    """A file with unchanged metadata is not processed again."""
+    watched = tmp_path / "watched"
+    watched.mkdir()
+
+    test_file = watched / "example.txt"
+    test_file.write_text("hello")
+
+    monkeypatch.chdir(tmp_path)
+
+    state = {}
+
+    first_scan = sync_agent.scan_directory(watched, state)
+    assert len(first_scan) == 1
+
+    second_scan = sync_agent.scan_directory(watched, state)
+
+    assert second_scan == []
+
+
+def test_modified_file_is_detected(tmp_path, monkeypatch):
+    """Changing file content results in a new detection."""
+    watched = tmp_path / "watched"
+    watched.mkdir()
+
+    test_file = watched / "example.txt"
+    test_file.write_text("hello")
+
+    monkeypatch.chdir(tmp_path)
+
+    state = {}
+
+    first_scan = sync_agent.scan_directory(watched, state)
+    first_hash = first_scan[0][1]
+
+    test_file.write_text("hello world")
+
+    second_scan = sync_agent.scan_directory(watched, state)
+
+    assert len(second_scan) == 1
+    assert second_scan[0][0] == "example.txt"
+    assert second_scan[0][1] != first_hash
+
+
+def test_hash_changes_when_content_changes(tmp_path):
+    """SHA-256 output changes when file content changes."""
+    test_file = tmp_path / "example.txt"
+
+    test_file.write_text("before")
+    first_hash = sync_agent.file_hash(test_file)
+
+    test_file.write_text("after")
+    second_hash = sync_agent.file_hash(test_file)
+
+    assert first_hash != second_hash
+
+
+def test_metadata_only_change_does_not_change_content_hash(
+    tmp_path, monkeypatch
+):
+    """A metadata change alone does not alter the content hash."""
+    watched = tmp_path / "watched"
+    watched.mkdir()
+
+    test_file = watched / "example.txt"
+    test_file.write_text("same content")
+
+    monkeypatch.chdir(tmp_path)
+
+    state = {}
+
+    first_scan = sync_agent.scan_directory(watched, state)
+    first_hash = first_scan[0][1]
+
+    # Change the modification time without changing file content.
+    original_stat = test_file.stat()
+    new_mtime = original_stat.st_mtime + 10
+
+    import os
+
+    os.utime(test_file, (new_mtime, new_mtime))
+
+    second_scan = sync_agent.scan_directory(watched, state)
+
+    assert len(second_scan) == 1
+    assert second_scan[0][1] == first_hash
+
+
+def test_nested_files_are_detected(tmp_path, monkeypatch):
+    """Files in nested directories are discovered recursively."""
+    watched = tmp_path / "watched"
+    nested = watched / "documents" / "reports"
+    nested.mkdir(parents=True)
+
+    test_file = nested / "report.txt"
+    test_file.write_text("report")
+
+    monkeypatch.chdir(tmp_path)
+
+    state = {}
+    changed = sync_agent.scan_directory(watched, state)
+
+    assert len(changed) == 1
+    assert changed[0][0] == str(
+        Path("documents") / "reports" / "report.txt"
+    )
+
+
+def test_metadata_persists_between_load_and_save(
+    tmp_path, monkeypatch
+):
+    """Stored metadata can be written and loaded again."""
+    monkeypatch.chdir(tmp_path)
+
+    state = {
+        "example.txt": {
+            "mtime": 123.0,
+            "size": 5,
+            "hash": "abc123",
+        }
+    }
+
+    sync_agent.save_state(state)
+
+    loaded = sync_agent.load_state()
+
+    assert loaded == state
+
+
+def test_large_file_is_hashed_incrementally(tmp_path):
+    """A larger file can be hashed using the configured block size."""
+    test_file = tmp_path / "large.bin"
+
+    test_file.write_bytes(b"A" * (1024 * 1024))
+
+    digest = sync_agent.file_hash(
+        test_file,
+        block_size=4096,
+    )
+
+    assert isinstance(digest, str)
+    assert len(digest) == 64
