@@ -567,11 +567,8 @@ Always obtain appropriate permission before performing security testing against 
 
 ## License
 
-Add the appropriate open-source licence if you intend to distribute the project publicly.
-
-For example, if you choose the MIT License, add a `LICENSE` file containing the official MIT License text.
-
-If the repository is intended primarily as a portfolio or educational project and you do not yet want to grant reuse rights, you may leave the repository without an open-source licence until you have made that decision.
+This project is released under the MIT License.
+You are free to use, modify, and distribute this lab for learning and research purposes.
 
 ---
 
