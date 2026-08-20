@@ -1,4 +1,14 @@
-__pycache__/
-*.pyc
+# Runtime state
 metadata.json
 
+# Python
+__pycache__/
+*.py[cod]
+
+# Test/cache files
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
