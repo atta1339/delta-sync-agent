@@ -78,21 +78,6 @@ def scan_directory(root, state):
     return changed
 
 
-# ---------------------------------------------------------
-# Placeholder for block-level delta sync
-# ---------------------------------------------------------
-def split_into_chunks(path, chunk_size=4 * 1024 * 1024):
-    """
-    Placeholder for block-level delta synchronisation.
-    Splits a file into fixed-size chunks.
-    """
-    with open(path, "rb") as f:
-        while True:
-            chunk = f.read(chunk_size)
-            if not chunk:
-                break
-            yield chunk
-
 
 # ---------------------------------------------------------
 # Main execution
