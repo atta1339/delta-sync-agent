@@ -12,3 +12,6 @@ __pycache__/
 .venv/
 venv/
 env/
+
+# Runtime/test data
+watched_dir/*
