@@ -1,6 +1,6 @@
 """
 delta-sync-agent
-Author: Atta Kouhzad
+Author: Attaollah Kouhzad
 
 Prototype demonstrating a simple change detection engine for a
 directory synchronisation utility. Tracks file metadata, computes
