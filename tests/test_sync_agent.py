@@ -164,3 +164,54 @@ def test_large_file_is_hashed_incrementally(tmp_path):
 
     assert isinstance(digest, str)
     assert len(digest) == 64
+def test_deleted_file_is_detected(tmp_path, monkeypatch):
+    """A file removed from the directory is detected as deleted."""
+    watched = tmp_path / "watched"
+    watched.mkdir()
+
+    test_file = watched / "example.txt"
+    test_file.write_text("hello")
+
+    monkeypatch.chdir(tmp_path)
+
+    state = {}
+
+    first_scan = sync_agent.scan_directory(watched, state)
+    assert len(first_scan) == 1
+
+    test_file.unlink()
+
+    second_scan = sync_agent.scan_directory(watched, state)
+
+    assert second_scan == [("example.txt", None)]
+    assert "example.txt" not in state
+
+
+def test_multiple_deleted_files_are_detected(tmp_path, monkeypatch):
+    """Multiple files removed from the directory are detected."""
+    watched = tmp_path / "watched"
+    watched.mkdir()
+
+    first_file = watched / "first.txt"
+    second_file = watched / "second.txt"
+
+    first_file.write_text("first")
+    second_file.write_text("second")
+
+    monkeypatch.chdir(tmp_path)
+
+    state = {}
+
+    first_scan = sync_agent.scan_directory(watched, state)
+    assert len(first_scan) == 2
+
+    first_file.unlink()
+    second_file.unlink()
+
+    second_scan = sync_agent.scan_directory(watched, state)
+
+    assert set(second_scan) == {
+        ("first.txt", None),
+        ("second.txt", None),
+    }
+    assert state == {}

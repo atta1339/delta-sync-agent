@@ -52,17 +52,21 @@ def file_hash(path, block_size=65536):
 # ---------------------------------------------------------
 def scan_directory(root, state):
     """
-    Scan a directory and detect new or modified files.
+    Scan a directory and detect new, modified, or deleted files.
     Returns a list of (relative_path, sha256_hash).
+    Deleted files are represented with a hash of None.
     """
     root = Path(root)
     changed = []
+    current_files = set()
 
     for path in root.rglob("*"):
         if not path.is_file():
             continue
 
         rel = str(path.relative_to(root))
+        current_files.add(rel)
+
         stat = path.stat()
         mtime = stat.st_mtime
         size = stat.st_size
@@ -72,8 +76,20 @@ def scan_directory(root, state):
         # Detect new or modified files
         if prev is None or prev["mtime"] != mtime or prev["size"] != size:
             digest = file_hash(path)
-            state[rel] = {"mtime": mtime, "size": size, "hash": digest}
+            state[rel] = {
+                "mtime": mtime,
+                "size": size,
+                "hash": digest,
+            }
             changed.append((rel, digest))
+
+    # Detect files that existed in the previous state but
+    # are no longer present in the directory.
+    deleted_files = set(state) - current_files
+
+    for rel in deleted_files:
+        del state[rel]
+        changed.append((rel, None))
 
     return changed
 
