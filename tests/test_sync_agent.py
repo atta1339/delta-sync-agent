@@ -215,3 +215,76 @@ def test_multiple_deleted_files_are_detected(tmp_path, monkeypatch):
         ("second.txt", None),
     }
     assert state == {}
+
+
+def test_build_chunk_manifest(tmp_path):
+    from sync_agent import build_chunk_manifest
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    manifest = build_chunk_manifest(file_path, chunk_size=4)
+
+    assert manifest["path"] == str(file_path)
+    assert manifest["size"] == 10
+    assert manifest["chunk_size"] == 4
+    assert len(manifest["chunks"]) == 3
+
+    assert manifest["chunks"][0]["index"] == 0
+    assert manifest["chunks"][0]["offset"] == 0
+    assert manifest["chunks"][0]["size"] == 4
+
+    assert manifest["chunks"][1]["index"] == 1
+    assert manifest["chunks"][1]["offset"] == 4
+    assert manifest["chunks"][1]["size"] == 4
+
+    assert manifest["chunks"][2]["index"] == 2
+    assert manifest["chunks"][2]["offset"] == 8
+    assert manifest["chunks"][2]["size"] == 2
+
+
+def test_build_chunk_manifest_hashes_are_correct(tmp_path):
+    import hashlib
+
+    from sync_agent import build_chunk_manifest
+
+    file_path = tmp_path / "sample.bin"
+    content = b"abcdefghij"
+    file_path.write_bytes(content)
+
+    manifest = build_chunk_manifest(file_path, chunk_size=4)
+
+    assert manifest["sha256"] == hashlib.sha256(content).hexdigest()
+
+    for chunk in manifest["chunks"]:
+        start = chunk["offset"]
+        end = start + chunk["size"]
+        expected_hash = hashlib.sha256(content[start:end]).hexdigest()
+
+        assert chunk["sha256"] == expected_hash
+
+
+def test_build_chunk_manifest_rejects_invalid_chunk_size(tmp_path):
+    import pytest
+
+    from sync_agent import build_chunk_manifest
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"test")
+
+    with pytest.raises(ValueError):
+        build_chunk_manifest(file_path, chunk_size=0)
+
+    with pytest.raises(ValueError):
+        build_chunk_manifest(file_path, chunk_size=-1)
+
+
+def test_build_chunk_manifest_rejects_missing_file(tmp_path):
+    import pytest
+
+    from sync_agent import build_chunk_manifest
+
+    missing_file = tmp_path / "missing.bin"
+
+    with pytest.raises(FileNotFoundError):
+        build_chunk_manifest(missing_file)

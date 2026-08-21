@@ -106,3 +106,61 @@ if __name__ == "__main__":
     for rel, digest in changed_files:
         print(f"File changed: {rel} (sha256={digest})")
 
+
+def build_chunk_manifest(path, chunk_size=65536):
+    """
+    Build a chunk manifest for a file.
+
+    Each chunk contains:
+    - index
+    - byte offset
+    - size
+    - SHA-256 hash
+
+    The manifest also contains the file's total size and SHA-256 hash.
+    """
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than zero")
+
+    path = Path(path)
+
+    if not path.is_file():
+        raise FileNotFoundError(path)
+
+    chunks = []
+    file_hash_object = hashlib.sha256()
+    total_size = 0
+
+    with path.open("rb") as file:
+        index = 0
+        offset = 0
+
+        while True:
+            data = file.read(chunk_size)
+
+            if not data:
+                break
+
+            chunk_hash_object = hashlib.sha256(data)
+            file_hash_object.update(data)
+
+            chunks.append(
+                {
+                    "index": index,
+                    "offset": offset,
+                    "size": len(data),
+                    "sha256": chunk_hash_object.hexdigest(),
+                }
+            )
+
+            total_size += len(data)
+            offset += len(data)
+            index += 1
+
+    return {
+        "path": str(path),
+        "size": total_size,
+        "sha256": file_hash_object.hexdigest(),
+        "chunk_size": chunk_size,
+        "chunks": chunks,
+    }
