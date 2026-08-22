@@ -288,3 +288,59 @@ def test_build_chunk_manifest_rejects_missing_file(tmp_path):
 
     with pytest.raises(FileNotFoundError):
         build_chunk_manifest(missing_file)
+
+
+def test_get_changed_chunks_returns_empty_for_identical_manifests():
+    from sync_agent import get_changed_chunks
+
+    manifest = {
+        "chunks": [
+            {"index": 0, "offset": 0, "size": 4, "sha256": "aaa"},
+            {"index": 1, "offset": 4, "size": 4, "sha256": "bbb"},
+        ]
+    }
+
+    assert get_changed_chunks(manifest, manifest) == []
+
+
+def test_get_changed_chunks_detects_changed_chunk():
+    from sync_agent import get_changed_chunks
+
+    local_manifest = {
+        "chunks": [
+            {"index": 0, "offset": 0, "size": 4, "sha256": "aaa"},
+            {"index": 1, "offset": 4, "size": 4, "sha256": "changed"},
+            {"index": 2, "offset": 8, "size": 2, "sha256": "ccc"},
+        ]
+    }
+
+    remote_manifest = {
+        "chunks": [
+            {"index": 0, "offset": 0, "size": 4, "sha256": "aaa"},
+            {"index": 1, "offset": 4, "size": 4, "sha256": "bbb"},
+            {"index": 2, "offset": 8, "size": 2, "sha256": "ccc"},
+        ]
+    }
+
+    assert get_changed_chunks(local_manifest, remote_manifest) == [1]
+
+
+def test_get_changed_chunks_detects_new_local_chunk():
+    from sync_agent import get_changed_chunks
+
+    local_manifest = {
+        "chunks": [
+            {"index": 0, "offset": 0, "size": 4, "sha256": "aaa"},
+            {"index": 1, "offset": 4, "size": 4, "sha256": "bbb"},
+            {"index": 2, "offset": 8, "size": 2, "sha256": "ccc"},
+        ]
+    }
+
+    remote_manifest = {
+        "chunks": [
+            {"index": 0, "offset": 0, "size": 4, "sha256": "aaa"},
+            {"index": 1, "offset": 4, "size": 4, "sha256": "bbb"},
+        ]
+    }
+
+    assert get_changed_chunks(local_manifest, remote_manifest) == [2]

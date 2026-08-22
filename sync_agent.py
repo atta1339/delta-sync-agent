@@ -164,3 +164,23 @@ def build_chunk_manifest(path, chunk_size=65536):
         "chunk_size": chunk_size,
         "chunks": chunks,
     }
+
+
+def get_changed_chunks(local_manifest, remote_manifest):
+    """
+    Return the indexes of chunks whose SHA-256 hashes differ.
+    """
+    remote_chunks = {
+        chunk["index"]: chunk["sha256"]
+        for chunk in remote_manifest["chunks"]
+    }
+
+    changed_chunks = []
+
+    for chunk in local_manifest["chunks"]:
+        index = chunk["index"]
+
+        if remote_chunks.get(index) != chunk["sha256"]:
+            changed_chunks.append(index)
+
+    return changed_chunks
