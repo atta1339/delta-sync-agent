@@ -247,3 +247,32 @@ def apply_chunk_payload(path, payload):
 
             file.seek(offset)
             file.write(chunk["data"])
+
+
+def sync_file_chunks(path, remote_manifest, chunk_size=65536):
+    """
+    Determine changed chunks and build the payload required to synchronize them.
+    """
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than zero")
+
+    local_manifest = build_chunk_manifest(
+        path,
+        chunk_size=chunk_size,
+    )
+
+    changed_chunks = get_changed_chunks(
+        local_manifest,
+        remote_manifest,
+    )
+
+    payload = build_changed_chunk_payload(
+        path,
+        changed_chunks,
+        chunk_size=chunk_size,
+    )
+
+    return {
+        "changed_chunks": changed_chunks,
+        "payload": payload,
+    }
