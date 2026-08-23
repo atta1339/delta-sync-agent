@@ -94,7 +94,6 @@ def scan_directory(root, state):
     return changed
 
 
-
 def build_chunk_manifest(path, chunk_size=65536):
     """
     Build a chunk manifest for a file.
