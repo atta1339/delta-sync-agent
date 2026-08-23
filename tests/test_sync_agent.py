@@ -367,3 +367,41 @@ def test_read_chunk_rejects_invalid_chunk_index(tmp_path):
 
     with pytest.raises(ValueError):
         read_chunk(file_path, chunk_index=-1, chunk_size=4)
+
+def test_build_changed_chunk_payload_returns_requested_chunks(tmp_path):
+    from sync_agent import build_changed_chunk_payload
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    payload = build_changed_chunk_payload(
+        file_path,
+        changed_chunks=[0, 2],
+        chunk_size=4,
+    )
+
+    assert len(payload) == 2
+
+    assert payload[0]["index"] == 0
+    assert payload[0]["offset"] == 0
+    assert payload[0]["data"] == b"abcd"
+
+    assert payload[1]["index"] == 2
+    assert payload[1]["offset"] == 8
+    assert payload[1]["data"] == b"ij"
+
+
+def test_build_changed_chunk_payload_rejects_invalid_chunk_index(tmp_path):
+    import pytest
+
+    from sync_agent import build_changed_chunk_payload
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    with pytest.raises(ValueError):
+        build_changed_chunk_payload(
+            file_path,
+            changed_chunks=[-1],
+            chunk_size=4,
+        )

@@ -204,3 +204,28 @@ def read_chunk(path, chunk_index, chunk_size=65536):
     with path.open("rb") as file:
         file.seek(offset)
         return file.read(chunk_size)
+def build_changed_chunk_payload(path, changed_chunks, chunk_size=65536):
+    """
+    Build a payload containing only the requested chunks.
+    """
+    payload = []
+
+    for chunk_index in changed_chunks:
+        if chunk_index < 0:
+            raise ValueError("chunk_index must not be negative")
+
+        data = read_chunk(
+            path,
+            chunk_index=chunk_index,
+            chunk_size=chunk_size,
+        )
+
+        payload.append(
+            {
+                "index": chunk_index,
+                "offset": chunk_index * chunk_size,
+                "data": data,
+            }
+        )
+
+    return payload
