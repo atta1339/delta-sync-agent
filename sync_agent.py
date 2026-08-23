@@ -93,18 +93,6 @@ def scan_directory(root, state):
 
     return changed
 
-# ---------------------------------------------------------
-# Main execution
-# ---------------------------------------------------------
-if __name__ == "__main__":
-    watched_dir = "watched_dir"
-
-    state = load_state()
-    changed_files = scan_directory(watched_dir, state)
-    save_state(state)
-
-    for rel, digest in changed_files:
-        print(f"File changed: {rel} (sha256={digest})")
 
 
 def build_chunk_manifest(path, chunk_size=65536):
@@ -282,3 +270,16 @@ def sync_file_chunks(path, remote_manifest, chunk_size=65536):
         "changed_chunks": changed_chunks,
         "payload": payload,
     }
+
+# ---------------------------------------------------------
+# Main execution
+# ---------------------------------------------------------
+if __name__ == "__main__":
+    watched_dir = "watched_dir"
+
+    state = load_state()
+    changed_files = scan_directory(watched_dir, state)
+    save_state(state)
+
+    for rel, digest in changed_files:
+        print(f"File changed: {rel} (sha256={digest})")
