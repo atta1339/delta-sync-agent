@@ -184,3 +184,23 @@ def get_changed_chunks(local_manifest, remote_manifest):
             changed_chunks.append(index)
 
     return changed_chunks
+def read_chunk(path, chunk_index, chunk_size=65536):
+    """
+    Read and return a specific chunk from a file.
+    """
+    if chunk_index < 0:
+        raise ValueError("chunk_index must not be negative")
+
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than zero")
+
+    path = Path(path)
+
+    if not path.is_file():
+        raise FileNotFoundError(path)
+
+    offset = chunk_index * chunk_size
+
+    with path.open("rb") as file:
+        file.seek(offset)
+        return file.read(chunk_size)

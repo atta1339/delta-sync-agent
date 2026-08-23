@@ -344,3 +344,26 @@ def test_get_changed_chunks_detects_new_local_chunk():
     }
 
     assert get_changed_chunks(local_manifest, remote_manifest) == [2]
+
+
+def test_read_chunk_returns_requested_chunk(tmp_path):
+    from sync_agent import read_chunk
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    assert read_chunk(file_path, chunk_index=0, chunk_size=4) == b"abcd"
+    assert read_chunk(file_path, chunk_index=1, chunk_size=4) == b"efgh"
+    assert read_chunk(file_path, chunk_index=2, chunk_size=4) == b"ij"
+
+
+def test_read_chunk_rejects_invalid_chunk_index(tmp_path):
+    import pytest
+
+    from sync_agent import read_chunk
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    with pytest.raises(ValueError):
+        read_chunk(file_path, chunk_index=-1, chunk_size=4)
