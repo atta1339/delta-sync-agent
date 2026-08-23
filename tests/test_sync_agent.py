@@ -405,3 +405,43 @@ def test_build_changed_chunk_payload_rejects_invalid_chunk_index(tmp_path):
             changed_chunks=[-1],
             chunk_size=4,
         )
+def test_apply_chunk_payload_writes_chunks_at_correct_offsets(tmp_path):
+    from sync_agent import apply_chunk_payload
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    payload = [
+        {
+            "index": 0,
+            "offset": 0,
+            "data": b"ABCD",
+        },
+        {
+            "index": 2,
+            "offset": 8,
+            "data": b"XY",
+        },
+    ]
+
+    apply_chunk_payload(file_path, payload)
+
+    assert file_path.read_bytes() == b"ABCD" + b"efgh" + b"XY"
+def test_apply_chunk_payload_rejects_negative_offset(tmp_path):
+    import pytest
+
+    from sync_agent import apply_chunk_payload
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    payload = [
+        {
+            "index": 0,
+            "offset": -1,
+            "data": b"ABCD",
+        }
+    ]
+
+    with pytest.raises(ValueError):
+        apply_chunk_payload(file_path, payload)

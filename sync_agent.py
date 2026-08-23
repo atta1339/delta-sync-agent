@@ -229,3 +229,21 @@ def build_changed_chunk_payload(path, changed_chunks, chunk_size=65536):
         )
 
     return payload
+def apply_chunk_payload(path, payload):
+    """
+    Write chunk payload data to the specified offsets in a file.
+    """
+    path = Path(path)
+
+    if not path.is_file():
+        raise FileNotFoundError(path)
+
+    with path.open("r+b") as file:
+        for chunk in payload:
+            offset = chunk["offset"]
+
+            if offset < 0:
+                raise ValueError("chunk offset must not be negative")
+
+            file.seek(offset)
+            file.write(chunk["data"])
