@@ -233,6 +233,8 @@ def build_changed_chunk_payload(path, changed_chunks, chunk_size=65536):
         )
 
     return payload
+
+
 def apply_chunk_payload(path, payload):
     """
     Write chunk payload data to the specified offsets in a file.
