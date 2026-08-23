@@ -184,6 +184,8 @@ def get_changed_chunks(local_manifest, remote_manifest):
             changed_chunks.append(index)
 
     return changed_chunks
+
+
 def read_chunk(path, chunk_index, chunk_size=65536):
     """
     Read and return a specific chunk from a file.
@@ -204,6 +206,8 @@ def read_chunk(path, chunk_index, chunk_size=65536):
     with path.open("rb") as file:
         file.seek(offset)
         return file.read(chunk_size)
+
+
 def build_changed_chunk_payload(path, changed_chunks, chunk_size=65536):
     """
     Build a payload containing only the requested chunks.
