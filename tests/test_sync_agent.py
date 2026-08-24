@@ -745,3 +745,44 @@ def test_build_changed_chunk_payload_rejects_chunk_beyond_end_of_file(tmp_path):
             changed_chunks=[3],
             chunk_size=4,
         )
+def test_end_to_end_chunk_sync_updates_destination(tmp_path):
+    from sync_agent import (
+        apply_chunk_payload,
+        build_chunk_manifest,
+        sync_file_chunks,
+        verify_chunk_manifest,
+    )
+
+    source_path = tmp_path / "source.bin"
+    destination_path = tmp_path / "destination.bin"
+
+    source_path.write_bytes(b"abcdefghij")
+    destination_path.write_bytes(b"abcdXXXXij")
+
+    remote_manifest = build_chunk_manifest(
+        destination_path,
+        chunk_size=4,
+    )
+
+    result = sync_file_chunks(
+        source_path,
+        remote_manifest,
+        chunk_size=4,
+    )
+
+    assert result["changed_chunks"] == [1]
+
+    apply_chunk_payload(
+        destination_path,
+        result["payload"],
+    )
+
+    source_manifest = build_chunk_manifest(
+        source_path,
+        chunk_size=4,
+    )
+
+    assert verify_chunk_manifest(
+        destination_path,
+        source_manifest,
+    )
