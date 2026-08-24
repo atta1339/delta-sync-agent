@@ -1,91 +1,68 @@
 # Delta Sync Agent
 
-A Python prototype demonstrating a bandwidth-efficient file
-synchronisation engine based on file hashing, chunk manifests,
-differential chunk detection, and targeted payload transfer.
+A Python prototype for detecting file changes and efficiently preparing
+changed data for synchronisation.
 
-The project began as a local file change-detection utility and has
-evolved into a small, test-driven delta synchronisation prototype.
+The project began as a local file change-detection engine and has evolved
+into a chunk-aware synchronisation prototype. It combines persistent file
+metadata, SHA-256 integrity hashing, chunk manifests, changed-chunk
+detection, chunk payload construction, payload application, and manifest
+verification.
 
-> **Project status:** Working prototype — local delta synchronisation
-> workflow implemented and tested.
+The implementation is intentionally modular and test-driven, providing a
+foundation for future development of a reliable bandwidth-efficient file
+synchronisation system.
+
+> **Project status:** Working prototype — local change detection and
+> chunk-level synchronisation engine.
 >
-> The current implementation demonstrates the core mechanics of
-> chunk-based synchronisation locally. Network transport, authentication,
-> encryption, resumable transfers, concurrency, and distributed
-> coordination remain outside the current scope.
+> Remote transport, client/server communication, resumable transfers,
+> authentication, encryption in transit, and production deployment are
+> intentionally outside the current implementation.
 
 ---
 
 ## Overview
 
-Delta Sync Agent explores the design of a reliable and
-bandwidth-efficient file synchronisation system.
+Delta Sync Agent explores the core mechanisms required by a
+bandwidth-efficient file synchronisation utility.
 
-Instead of retransmitting an entire file when only part of it has
-changed, the prototype divides files into fixed-size chunks and
-calculates a SHA-256 hash for each chunk.
+The application can:
 
-When comparing a local file with a remote manifest, the agent identifies
-only the chunks whose hashes differ. Those chunks are then read into a
-targeted payload that can be applied to the destination file.
+1. Recursively scan a watched directory.
+2. Detect newly created, modified, and deleted files.
+3. Maintain persistent local metadata.
+4. Calculate SHA-256 file hashes.
+5. Divide files into configurable chunks.
+6. Generate per-chunk SHA-256 hashes.
+7. Compare local and remote chunk manifests.
+8. Identify only the chunks that differ.
+9. Build a payload containing the changed chunks.
+10. Apply chunk payloads at specified file offsets.
+11. Verify a file against an expected chunk manifest.
 
-This provides the foundation for incremental or delta-based file
-synchronisation.
+The design separates these responsibilities into independently testable
+functions.
 
 ---
 
 ## Current Capabilities
 
-The prototype currently implements:
+### File Change Detection
 
-### File change detection
+The change-detection layer provides:
 
 - Recursive directory scanning
-- Detection of newly discovered files
-- Detection of modified files
-- Detection of deleted files
+- New-file detection
+- Modified-file detection
+- Deleted-file detection
 - File size tracking
 - Modification-time tracking
-- Persistent local metadata
 - SHA-256 file hashing
+- Persistent metadata storage
+- Structured change reporting
 
-### Chunk-based synchronisation
-
-- Fixed-size chunking
-- Per-chunk SHA-256 hashing
-- Whole-file SHA-256 hashing
-- Chunk manifest generation
-- Chunk manifest verification
-- Local/remote chunk comparison
-- Detection of changed chunks
-- Detection of duplicate remote chunk indexes
-- Validation of required chunk fields
-- Rejection of invalid chunk indexes
-- Rejection of chunk requests beyond the end of a file
-- Construction of targeted chunk payloads
-- Application of chunk payloads at specific file offsets
-
-### Testing
-
-The project includes automated tests covering:
-
-- File change detection
-- File creation and modification
-- File deletion
-- SHA-256 hashing
-- Chunk manifest generation
-- Chunk hash correctness
-- Manifest verification
-- Changed chunk detection
-- Invalid manifest handling
-- Duplicate chunk detection
-- Chunk payload construction
-- Chunk payload application
-- Invalid chunk handling
-- End-to-end chunk synchronisation
-
-Current test suite:
+Example change output:
 
 ```text
-37 passed
+File changed: example.txt (sha256=<sha256-hash>)
