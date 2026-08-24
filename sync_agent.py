@@ -342,8 +342,8 @@ def synchronize_file_chunks(source_path, target_path, chunk_size=65536):
     )
 
     changed_chunks = get_changed_chunks(
-        target_manifest,
         source_manifest,
+        target_manifest,
     )
 
     payload = build_changed_chunk_payload(
@@ -356,6 +356,9 @@ def synchronize_file_chunks(source_path, target_path, chunk_size=65536):
         target_path,
         payload,
     )
+
+    with target_path.open("r+b") as file:
+        file.truncate(source_manifest["size"])
 
     verified = verify_chunk_manifest(
         target_path,
@@ -370,6 +373,7 @@ def synchronize_file_chunks(source_path, target_path, chunk_size=65536):
         "payload": payload,
         "verified": verified,
     }
+
 # ---------------------------------------------------------
 # Main execution
 # ---------------------------------------------------------

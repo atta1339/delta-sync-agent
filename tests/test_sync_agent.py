@@ -627,6 +627,44 @@ def test_synchronize_file_chunks_handles_final_partial_chunk(tmp_path):
     assert result["verified"] is True
     assert target_path.read_bytes() == source_path.read_bytes()
 
+
+def test_synchronize_file_chunks_handles_smaller_target(tmp_path):
+    from sync_agent import synchronize_file_chunks
+
+    source_path = tmp_path / "source.bin"
+    target_path = tmp_path / "target.bin"
+
+    source_path.write_bytes(b"abcdefghij")
+    target_path.write_bytes(b"abcd")
+
+    result = synchronize_file_chunks(
+        source_path,
+        target_path,
+        chunk_size=4,
+    )
+
+    assert result["verified"] is True
+    assert target_path.read_bytes() == source_path.read_bytes()
+    assert target_path.stat().st_size == source_path.stat().st_size
+def test_synchronize_file_chunks_handles_different_file_sizes(tmp_path):
+    from sync_agent import synchronize_file_chunks
+
+    source_path = tmp_path / "source.bin"
+    target_path = tmp_path / "target.bin"
+
+    source_path.write_bytes(b"abcdefghij")
+    target_path.write_bytes(b"abcdXXXXijklmn")
+
+    result = synchronize_file_chunks(
+        source_path,
+        target_path,
+        chunk_size=4,
+    )
+
+    assert result["verified"] is True
+    assert target_path.read_bytes() == source_path.read_bytes()
+    assert target_path.stat().st_size == source_path.stat().st_size
+
 def test_verify_chunk_manifest_accepts_matching_file(tmp_path):
     from sync_agent import build_chunk_manifest, verify_chunk_manifest
 
