@@ -445,6 +445,53 @@ def test_apply_chunk_payload_rejects_negative_offset(tmp_path):
 
     with pytest.raises(ValueError):
         apply_chunk_payload(file_path, payload)
+
+
+def test_sync_file_chunks_returns_empty_for_identical_file(tmp_path):
+    import hashlib
+
+    from sync_agent import sync_file_chunks
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    remote_manifest = {
+        "path": str(file_path),
+        "size": 10,
+        "sha256": hashlib.sha256(b"abcdefghij").hexdigest(),
+        "chunk_size": 4,
+        "chunks": [
+            {
+                "index": 0,
+                "offset": 0,
+                "size": 4,
+                "sha256": hashlib.sha256(b"abcd").hexdigest(),
+            },
+            {
+                "index": 1,
+                "offset": 4,
+                "size": 4,
+                "sha256": hashlib.sha256(b"efgh").hexdigest(),
+            },
+            {
+                "index": 2,
+                "offset": 8,
+                "size": 2,
+                "sha256": hashlib.sha256(b"ij").hexdigest(),
+            },
+        ],
+    }
+
+    result = sync_file_chunks(
+        file_path,
+        remote_manifest,
+        chunk_size=4,
+    )
+
+    assert result["changed_chunks"] == []
+    assert result["payload"] == []
+
+
 def test_sync_file_chunks_returns_only_changed_chunks(tmp_path):
     import hashlib
 
