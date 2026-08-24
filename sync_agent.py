@@ -244,6 +244,9 @@ def build_changed_chunk_payload(path, changed_chunks, chunk_size=65536):
             chunk_size=chunk_size,
         )
 
+        if not data:
+            raise ValueError("chunk_index is beyond end of file")
+
         payload.append(
             {
                 "index": chunk_index,

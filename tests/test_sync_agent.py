@@ -695,3 +695,53 @@ def test_get_changed_chunks_rejects_duplicate_remote_chunk_indexes():
 
     with pytest.raises(ValueError):
         get_changed_chunks(local_manifest, remote_manifest)
+
+
+def test_build_changed_chunk_payload_preserves_chunk_metadata(tmp_path):
+    import hashlib
+
+    from sync_agent import build_changed_chunk_payload
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    manifest = {
+        "chunks": [
+            {
+                "index": 2,
+                "offset": 8,
+                "size": 2,
+                "sha256": hashlib.sha256(b"ij").hexdigest(),
+            },
+        ]
+    }
+
+    payload = build_changed_chunk_payload(
+        file_path,
+        changed_chunks=[2],
+        chunk_size=4,
+    )
+
+    assert payload == [
+        {
+            "index": 2,
+            "offset": 8,
+            "data": b"ij",
+        }
+    ]
+
+
+def test_build_changed_chunk_payload_rejects_chunk_beyond_end_of_file(tmp_path):
+    import pytest
+
+    from sync_agent import build_changed_chunk_payload
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    with pytest.raises(ValueError):
+        build_changed_chunk_payload(
+            file_path,
+            changed_chunks=[3],
+            chunk_size=4,
+        )
