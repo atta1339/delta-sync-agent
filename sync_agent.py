@@ -260,23 +260,36 @@ def build_changed_chunk_payload(path, changed_chunks, chunk_size=65536):
 
 def apply_chunk_payload(path, payload):
     """
-    Write chunk payload data to the specified offsets in a file.
+    Validate and write chunk payload data to the specified offsets.
     """
     path = Path(path)
 
     if not path.is_file():
         raise FileNotFoundError(path)
 
+    for chunk in payload:
+        if not isinstance(chunk, dict):
+            raise ValueError("each payload chunk must be a dictionary")
+
+        if "offset" not in chunk or "data" not in chunk:
+            raise ValueError("each payload chunk must contain offset and data")
+
+        offset = chunk["offset"]
+        data = chunk["data"]
+
+        if not isinstance(offset, int):
+            raise ValueError("chunk offset must be an integer")
+
+        if offset < 0:
+            raise ValueError("chunk offset must not be negative")
+
+        if not isinstance(data, bytes):
+            raise ValueError("chunk data must be bytes")
+
     with path.open("r+b") as file:
         for chunk in payload:
-            offset = chunk["offset"]
-
-            if offset < 0:
-                raise ValueError("chunk offset must not be negative")
-
-            file.seek(offset)
+            file.seek(chunk["offset"])
             file.write(chunk["data"])
-
 
 def sync_file_chunks(path, remote_manifest, chunk_size=65536):
     """

@@ -446,6 +446,43 @@ def test_apply_chunk_payload_rejects_negative_offset(tmp_path):
     with pytest.raises(ValueError):
         apply_chunk_payload(file_path, payload)
 
+def test_apply_chunk_payload_rejects_missing_offset(tmp_path):
+    import pytest
+
+    from sync_agent import apply_chunk_payload
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    payload = [
+        {
+            "index": 0,
+            "data": b"ABCD",
+        }
+    ]
+
+    with pytest.raises(ValueError):
+        apply_chunk_payload(file_path, payload)
+
+
+def test_apply_chunk_payload_rejects_non_bytes_data(tmp_path):
+    import pytest
+
+    from sync_agent import apply_chunk_payload
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    payload = [
+        {
+            "index": 0,
+            "offset": 0,
+            "data": "ABCD",
+        }
+    ]
+
+    with pytest.raises(ValueError):
+        apply_chunk_payload(file_path, payload)
 
 def test_sync_file_chunks_returns_empty_for_identical_file(tmp_path):
     import hashlib
