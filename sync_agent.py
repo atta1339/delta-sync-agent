@@ -274,9 +274,12 @@ def apply_chunk_payload(path, payload):
         if "offset" not in chunk or "data" not in chunk:
             raise ValueError("each payload chunk must contain offset and data")
 
+        index = chunk.get("index")
         offset = chunk["offset"]
         data = chunk["data"]
 
+        if index is not None and not isinstance(index, int):
+            raise ValueError("chunk index must be an integer")
         if not isinstance(offset, int):
             raise ValueError("chunk offset must be an integer")
 
