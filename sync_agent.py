@@ -306,6 +306,70 @@ def sync_file_chunks(path, remote_manifest, chunk_size=65536):
         "payload": payload,
     }
 
+
+def synchronize_file_chunks(source_path, target_path, chunk_size=65536):
+    """
+    Synchronize a target file from a source file using changed chunks.
+
+    The source manifest is treated as the expected final state. Only chunks
+    that differ between the source and target are transferred. The target is
+    then verified against the source manifest.
+
+    Returns:
+        A dictionary containing the source manifest, changed chunk indexes,
+        payload, and final verification result.
+    """
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than zero")
+
+    source_path = Path(source_path)
+    target_path = Path(target_path)
+
+    if not source_path.is_file():
+        raise FileNotFoundError(source_path)
+
+    if not target_path.is_file():
+        raise FileNotFoundError(target_path)
+
+    source_manifest = build_chunk_manifest(
+        source_path,
+        chunk_size=chunk_size,
+    )
+
+    target_manifest = build_chunk_manifest(
+        target_path,
+        chunk_size=chunk_size,
+    )
+
+    changed_chunks = get_changed_chunks(
+        target_manifest,
+        source_manifest,
+    )
+
+    payload = build_changed_chunk_payload(
+        source_path,
+        changed_chunks,
+        chunk_size=chunk_size,
+    )
+
+    apply_chunk_payload(
+        target_path,
+        payload,
+    )
+
+    verified = verify_chunk_manifest(
+        target_path,
+        source_manifest,
+    )
+
+    if not verified:
+        raise ValueError("target file failed manifest verification")
+
+    return {
+        "changed_chunks": changed_chunks,
+        "payload": payload,
+        "verified": verified,
+    }
 # ---------------------------------------------------------
 # Main execution
 # ---------------------------------------------------------
