@@ -617,3 +617,38 @@ def test_verify_chunk_manifest_rejects_manifest_without_chunk_size(tmp_path):
 
     with pytest.raises(ValueError):
         verify_chunk_manifest(file_path, manifest)
+
+
+def test_get_changed_chunks_detects_remote_hash_mismatch():
+    from sync_agent import get_changed_chunks
+
+    local_manifest = {
+        "chunks": [
+            {"index": 0, "offset": 0, "size": 4, "sha256": "local-hash"},
+        ]
+    }
+
+    remote_manifest = {
+        "chunks": [
+            {"index": 0, "offset": 0, "size": 4, "sha256": "remote-hash"},
+        ]
+    }
+
+    assert get_changed_chunks(local_manifest, remote_manifest) == [0]
+
+
+def test_get_changed_chunks_rejects_manifest_without_chunks():
+    import pytest
+
+    from sync_agent import get_changed_chunks
+
+    local_manifest = {
+        "chunks": [
+            {"index": 0, "offset": 0, "size": 4, "sha256": "aaa"},
+        ]
+    }
+
+    remote_manifest = {}
+
+    with pytest.raises(ValueError):
+        get_changed_chunks(local_manifest, remote_manifest)

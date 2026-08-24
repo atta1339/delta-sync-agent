@@ -178,6 +178,9 @@ def get_changed_chunks(local_manifest, remote_manifest):
     """
     Return the indexes of chunks whose SHA-256 hashes differ.
     """
+    if "chunks" not in local_manifest or "chunks" not in remote_manifest:
+        raise ValueError("manifests must contain chunks")
+
     remote_chunks = {
         chunk["index"]: chunk["sha256"]
         for chunk in remote_manifest["chunks"]
