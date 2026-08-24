@@ -1,80 +1,91 @@
 # Delta Sync Agent
 
-A Python prototype for detecting newly created and modified files within a
-watched directory. The project demonstrates structured change detection,
-persistent metadata tracking, SHA-256 integrity hashing, and automated testing
-as the foundation of a bandwidth-efficient file synchronisation system.
+A Python prototype demonstrating a bandwidth-efficient file
+synchronisation engine based on file hashing, chunk manifests,
+differential chunk detection, and targeted payload transfer.
 
-> **Project status:** Working prototype — change-detection component.
+The project began as a local file change-detection utility and has
+evolved into a small, test-driven delta synchronisation prototype.
+
+> **Project status:** Working prototype — local delta synchronisation
+> workflow implemented and tested.
 >
-> The current implementation focuses on local file discovery and change
-> detection. Remote synchronisation, block-level delta transfer, resumable
-> uploads, and bandwidth management are architectural extensions rather than
-> implemented features of the current prototype.
+> The current implementation demonstrates the core mechanics of
+> chunk-based synchronisation locally. Network transport, authentication,
+> encryption, resumable transfers, concurrency, and distributed
+> coordination remain outside the current scope.
 
 ---
 
 ## Overview
 
-Delta Sync Agent explores the client-side foundations of a reliable file
-synchronisation utility.
+Delta Sync Agent explores the design of a reliable and
+bandwidth-efficient file synchronisation system.
 
-The prototype recursively scans a configured directory and maintains local
-metadata for files that have previously been observed. A file is considered
-new or modified when its recorded metadata differs from the current
-filesystem state.
+Instead of retransmitting an entire file when only part of it has
+changed, the prototype divides files into fixed-size chunks and
+calculates a SHA-256 hash for each chunk.
 
-For detected changes, the application computes a SHA-256 hash and records the
-updated metadata.
+When comparing a local file with a remote manifest, the agent identifies
+only the chunks whose hashes differ. Those chunks are then read into a
+targeted payload that can be applied to the destination file.
 
-The design provides a simple foundation that can be extended toward
-block-level delta synchronisation and reliable transfer over constrained or
-unstable networks.
+This provides the foundation for incremental or delta-based file
+synchronisation.
 
 ---
 
 ## Current Capabilities
 
-The current prototype implements:
+The prototype currently implements:
+
+### File change detection
 
 - Recursive directory scanning
 - Detection of newly discovered files
 - Detection of modified files
+- Detection of deleted files
 - File size tracking
 - Modification-time tracking
-- SHA-256 file hashing
 - Persistent local metadata
-- Structured change reporting
-- Automated unit testing
+- SHA-256 file hashing
 
-The implementation intentionally remains small and focused so that individual
-behaviours can be tested and validated independently.
+### Chunk-based synchronisation
 
----
+- Fixed-size chunking
+- Per-chunk SHA-256 hashing
+- Whole-file SHA-256 hashing
+- Chunk manifest generation
+- Chunk manifest verification
+- Local/remote chunk comparison
+- Detection of changed chunks
+- Detection of duplicate remote chunk indexes
+- Validation of required chunk fields
+- Rejection of invalid chunk indexes
+- Rejection of chunk requests beyond the end of a file
+- Construction of targeted chunk payloads
+- Application of chunk payloads at specific file offsets
 
-## How It Works
+### Testing
 
-The current change-detection workflow is:
+The project includes automated tests covering:
+
+- File change detection
+- File creation and modification
+- File deletion
+- SHA-256 hashing
+- Chunk manifest generation
+- Chunk hash correctness
+- Manifest verification
+- Changed chunk detection
+- Invalid manifest handling
+- Duplicate chunk detection
+- Chunk payload construction
+- Chunk payload application
+- Invalid chunk handling
+- End-to-end chunk synchronisation
+
+Current test suite:
 
 ```text
-Watched Directory
-       |
-       v
-Directory Scan
-       |
-       v
-Read File Metadata
-       |
-       v
-Compare With Previous State
-       |
-       +------ No Change ------> Continue
-       |
-       v
-Compute SHA-256
-       |
-       v
-Update Local Metadata
-       |
-       v
-Report Changed File
+37 passed
