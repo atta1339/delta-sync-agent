@@ -1,68 +1,70 @@
 # Delta Sync Agent
 
-A Python prototype for detecting file changes and efficiently preparing
-changed data for synchronisation.
+A Python prototype for efficient file synchronisation using metadata-based
+change detection, SHA-256 integrity hashing, and chunk-level delta transfer.
 
-The project began as a local file change-detection engine and has evolved
-into a chunk-aware synchronisation prototype. It combines persistent file
-metadata, SHA-256 integrity hashing, chunk manifests, changed-chunk
-detection, chunk payload construction, payload application, and manifest
-verification.
-
-The implementation is intentionally modular and test-driven, providing a
-foundation for future development of a reliable bandwidth-efficient file
-synchronisation system.
+The project explores the engineering foundations of a synchronisation system
+designed to minimise unnecessary data transfer by identifying changed files
+and, where appropriate, transferring only the affected file chunks.
 
 > **Project status:** Working prototype — local change detection and
-> chunk-level synchronisation engine.
->
-> Remote transport, client/server communication, resumable transfers,
-> authentication, encryption in transit, and production deployment are
-> intentionally outside the current implementation.
+> chunk-level synchronisation foundation implemented.
 
 ---
 
 ## Overview
 
-Delta Sync Agent explores the core mechanisms required by a
-bandwidth-efficient file synchronisation utility.
+Delta Sync Agent is a Python-based prototype exploring the core mechanisms
+behind an efficient file synchronisation utility.
 
-The application can:
+The project began as a metadata-based change detection engine and has been
+extended with chunk-level processing. It can now:
 
-1. Recursively scan a watched directory.
-2. Detect newly created, modified, and deleted files.
-3. Maintain persistent local metadata.
-4. Calculate SHA-256 file hashes.
-5. Divide files into configurable chunks.
-6. Generate per-chunk SHA-256 hashes.
-7. Compare local and remote chunk manifests.
-8. Identify only the chunks that differ.
-9. Build a payload containing the changed chunks.
-10. Apply chunk payloads at specified file offsets.
-11. Verify a file against an expected chunk manifest.
+1. Detect newly created, modified, and deleted files.
+2. Maintain persistent local file metadata.
+3. Calculate whole-file SHA-256 hashes.
+4. Divide files into deterministic chunks.
+5. Generate manifests containing per-chunk metadata and SHA-256 hashes.
+6. Compare local and remote-style manifests.
+7. Identify only the chunks whose content differs.
+8. Build a payload containing the changed chunks.
+9. Apply chunk payloads at their corresponding file offsets.
+10. Verify a file against an expected chunk manifest.
 
-The design separates these responsibilities into independently testable
-functions.
+The implementation is intentionally modular so that each component can be
+tested independently before being incorporated into a more complete
+synchronisation workflow.
 
 ---
 
-## Current Capabilities
+## Current Architecture
 
-### File Change Detection
+The current implementation consists of two closely related layers.
 
-The change-detection layer provides:
+### 1. File Change Detection
 
-- Recursive directory scanning
-- New-file detection
-- Modified-file detection
-- Deleted-file detection
-- File size tracking
-- Modification-time tracking
-- SHA-256 file hashing
-- Persistent metadata storage
-- Structured change reporting
-
-Example change output:
+The original change-detection layer monitors a configured directory and
+maintains persistent metadata for observed files.
 
 ```text
-File changed: example.txt (sha256=<sha256-hash>)
+Watched Directory
+       |
+       v
+Recursive Directory Scan
+       |
+       v
+Read File Metadata
+       |
+       v
+Compare With Previous State
+       |
+       +------ No Change ------> Continue
+       |
+       v
+Compute SHA-256
+       |
+       v
+Update Metadata
+       |
+       v
+Report Change
