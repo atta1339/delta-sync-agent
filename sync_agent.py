@@ -153,6 +153,27 @@ def build_chunk_manifest(path, chunk_size=65536):
     }
 
 
+def verify_chunk_manifest(path, expected_manifest):
+    """
+    Verify that a file matches an expected chunk manifest.
+    """
+    if "chunk_size" not in expected_manifest:
+        raise ValueError("expected_manifest must contain chunk_size")
+
+    actual_manifest = build_chunk_manifest(
+        path,
+        chunk_size=expected_manifest["chunk_size"],
+    )
+
+    actual_manifest = dict(actual_manifest)
+    expected_manifest = dict(expected_manifest)
+
+    actual_manifest.pop("path", None)
+    expected_manifest.pop("path", None)
+
+    return actual_manifest == expected_manifest
+
+
 def get_changed_chunks(local_manifest, remote_manifest):
     """
     Return the indexes of chunks whose SHA-256 hashes differ.

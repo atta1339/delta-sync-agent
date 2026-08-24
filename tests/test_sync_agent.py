@@ -563,3 +563,57 @@ def test_sync_file_chunks_rejects_invalid_chunk_size(tmp_path):
             remote_manifest,
             chunk_size=0,
         )
+
+
+def test_verify_chunk_manifest_accepts_matching_file(tmp_path):
+    from sync_agent import build_chunk_manifest, verify_chunk_manifest
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    manifest = build_chunk_manifest(file_path, chunk_size=4)
+
+    assert verify_chunk_manifest(file_path, manifest) is True
+
+
+def test_verify_chunk_manifest_rejects_modified_file(tmp_path):
+    from sync_agent import build_chunk_manifest, verify_chunk_manifest
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    manifest = build_chunk_manifest(file_path, chunk_size=4)
+
+    file_path.write_bytes(b"abcdZZghij")
+
+    assert verify_chunk_manifest(file_path, manifest) is False
+
+
+def test_verify_chunk_manifest_ignores_manifest_path(tmp_path):
+    from sync_agent import build_chunk_manifest, verify_chunk_manifest
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    manifest = build_chunk_manifest(file_path, chunk_size=4)
+    manifest["path"] = "remote/path/sample.bin"
+
+    assert verify_chunk_manifest(file_path, manifest) is True
+
+
+def test_verify_chunk_manifest_rejects_manifest_without_chunk_size(tmp_path):
+    import pytest
+
+    from sync_agent import verify_chunk_manifest
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    manifest = {
+        "size": 10,
+        "sha256": "placeholder",
+        "chunks": [],
+    }
+
+    with pytest.raises(ValueError):
+        verify_chunk_manifest(file_path, manifest)
