@@ -673,3 +673,25 @@ def test_get_changed_chunks_rejects_chunk_without_index():
 
     with pytest.raises(ValueError):
         get_changed_chunks(local_manifest, remote_manifest)
+
+
+def test_get_changed_chunks_rejects_duplicate_remote_chunk_indexes():
+    import pytest
+
+    from sync_agent import get_changed_chunks
+
+    local_manifest = {
+        "chunks": [
+            {"index": 0, "offset": 0, "size": 4, "sha256": "aaa"},
+        ]
+    }
+
+    remote_manifest = {
+        "chunks": [
+            {"index": 0, "offset": 0, "size": 4, "sha256": "aaa"},
+            {"index": 0, "offset": 0, "size": 4, "sha256": "bbb"},
+        ]
+    }
+
+    with pytest.raises(ValueError):
+        get_changed_chunks(local_manifest, remote_manifest)

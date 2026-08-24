@@ -185,6 +185,11 @@ def get_changed_chunks(local_manifest, remote_manifest):
         if "index" not in chunk or "sha256" not in chunk:
             raise ValueError("each remote chunk must contain index and sha256")
 
+    remote_indexes = [chunk["index"] for chunk in remote_manifest["chunks"]]
+
+    if len(remote_indexes) != len(set(remote_indexes)):
+        raise ValueError("remote manifest contains duplicate chunk indexes")
+
     remote_chunks = {
         chunk["index"]: chunk["sha256"]
         for chunk in remote_manifest["chunks"]
