@@ -402,9 +402,11 @@ def test_build_changed_chunk_payload_rejects_invalid_chunk_index(tmp_path):
     with pytest.raises(ValueError):
         build_changed_chunk_payload(
             file_path,
-            changed_chunks=[-1],
+            changed_chunks=[3],
             chunk_size=4,
         )
+
+
 def test_apply_chunk_payload_writes_chunks_at_correct_offsets(tmp_path):
     from sync_agent import apply_chunk_payload
 
@@ -424,9 +426,15 @@ def test_apply_chunk_payload_writes_chunks_at_correct_offsets(tmp_path):
         },
     ]
 
-    apply_chunk_payload(file_path, payload)
+    apply_chunk_payload(
+        file_path,
+        payload,
+        chunk_size=4,
+    )
 
     assert file_path.read_bytes() == b"ABCD" + b"efgh" + b"XY"
+
+
 def test_apply_chunk_payload_rejects_negative_offset(tmp_path):
     import pytest
 
@@ -456,14 +464,83 @@ def test_apply_chunk_payload_rejects_non_integer_index(tmp_path):
 
     payload = [
         {
-            "index": "zero",
+            "index": "0",
             "offset": 0,
             "data": b"ABCD",
         }
     ]
 
     with pytest.raises(ValueError):
-        apply_chunk_payload(file_path, payload)
+        apply_chunk_payload(
+            file_path,
+            payload,
+            chunk_size=4,
+        )
+
+
+def test_apply_chunk_payload_rejects_negative_index(tmp_path):
+    import pytest
+
+    from sync_agent import apply_chunk_payload
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    payload = [
+        {
+            "index": -1,
+            "offset": 0,
+            "data": b"ABCD",
+        }
+    ]
+
+    with pytest.raises(ValueError):
+        apply_chunk_payload(
+            file_path,
+            payload,
+            chunk_size=4,
+        )
+
+
+def test_apply_chunk_payload_rejects_mismatched_index_and_offset(tmp_path):
+    import pytest
+
+    from sync_agent import apply_chunk_payload
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    payload = [
+        {
+            "index": 1,
+            "offset": 0,
+            "data": b"ABCD",
+        }
+    ]
+
+    with pytest.raises(ValueError):
+        apply_chunk_payload(
+            file_path,
+            payload,
+            chunk_size=4,
+        )
+
+
+def test_apply_chunk_payload_rejects_invalid_chunk_size(tmp_path):
+    import pytest
+
+    from sync_agent import apply_chunk_payload
+
+    file_path = tmp_path / "sample.bin"
+    file_path.write_bytes(b"abcdefghij")
+
+    with pytest.raises(ValueError):
+        apply_chunk_payload(
+            file_path,
+            [],
+            chunk_size=0,
+        )
+
 
 def test_apply_chunk_payload_rejects_missing_offset(tmp_path):
     import pytest
@@ -931,6 +1008,7 @@ def test_end_to_end_chunk_sync_updates_destination(tmp_path):
     apply_chunk_payload(
         destination_path,
         result["payload"],
+        chunk_size=4,
     )
 
     source_manifest = build_chunk_manifest(

@@ -258,7 +258,7 @@ def build_changed_chunk_payload(path, changed_chunks, chunk_size=65536):
     return payload
 
 
-def apply_chunk_payload(path, payload):
+def apply_chunk_payload(path, payload, chunk_size=65536):
     """
     Validate and write chunk payload data to the specified offsets.
     """
@@ -267,12 +267,17 @@ def apply_chunk_payload(path, payload):
     if not path.is_file():
         raise FileNotFoundError(path)
 
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than zero")
+
     for chunk in payload:
         if not isinstance(chunk, dict):
             raise ValueError("each payload chunk must be a dictionary")
 
         if "offset" not in chunk or "data" not in chunk:
-            raise ValueError("each payload chunk must contain offset and data")
+            raise ValueError(
+                "each payload chunk must contain offset and data"
+            )
 
         index = chunk.get("index")
         offset = chunk["offset"]
@@ -280,11 +285,18 @@ def apply_chunk_payload(path, payload):
 
         if index is not None and not isinstance(index, int):
             raise ValueError("chunk index must be an integer")
+
+        if index is not None and index < 0:
+            raise ValueError("chunk index must not be negative")
+
         if not isinstance(offset, int):
             raise ValueError("chunk offset must be an integer")
 
         if offset < 0:
             raise ValueError("chunk offset must not be negative")
+
+        if index is not None and offset != index * chunk_size:
+            raise ValueError("chunk offset does not match chunk index")
 
         if not isinstance(data, bytes):
             raise ValueError("chunk data must be bytes")
@@ -293,7 +305,6 @@ def apply_chunk_payload(path, payload):
         for chunk in payload:
             file.seek(chunk["offset"])
             file.write(chunk["data"])
-
 def sync_file_chunks(path, remote_manifest, chunk_size=65536):
     """
     Determine changed chunks and build the payload required to synchronize them.
@@ -321,8 +332,6 @@ def sync_file_chunks(path, remote_manifest, chunk_size=65536):
         "changed_chunks": changed_chunks,
         "payload": payload,
     }
-
-
 def synchronize_file_chunks(source_path, target_path, chunk_size=65536):
     """
     Synchronize a target file from a source file using changed chunks.
@@ -371,8 +380,8 @@ def synchronize_file_chunks(source_path, target_path, chunk_size=65536):
     apply_chunk_payload(
         target_path,
         payload,
+        chunk_size=chunk_size,
     )
-
     with target_path.open("r+b") as file:
         file.truncate(source_manifest["size"])
 
